@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,6 +6,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <limits.h>
+#include <string.h>
 //readline, parseline, fork, wait for execution, parse next line.
 	// count the number of tokens before parsing, all tokens separated by single space
 	// Read and separate multiple commands on one line with ";"
@@ -30,5 +30,22 @@
 // I am much more forgiving of reported bugs than bugs I discover while testing
 // A copy of every function header
 // An example of the readme file can be found in the github repository for this assignment
+
+//Functions:
+void parse_args(char *line,char **args);
+void parse_arargs(char *line,char **ararg);
+int execute(char **args);
+
+//Helper:
+void println(char **sarray);
+int print_string(char *s);
+
+
+
+
+
+
+
+
 
 
