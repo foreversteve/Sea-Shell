@@ -12,13 +12,14 @@
 
 * Handles directory changing
 
-* Catches ```Ctrl-C```
 
 ## Attempted:
 
-* Using redirection with pipes
+* Displaying current directory after the $.
 
 ## Bugs and Issues:
+
+* File prints $bash multiple times upon exiting (Possibly fork error).
 
 ## Files and Function Headers:
 

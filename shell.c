@@ -1,5 +1,11 @@
   #include "shell.h"
   
+ //  static void sighandler(int signo){
+	// if (signo == SIGINT){
+	// 	printf("This doesn't work here :/ \n");
+	// 	printf("\n");
+	// }
+ //  }
 
   void parse_args(char *line,char **args){
   	// char **ans = calloc(100,sizeof(char*));
@@ -57,7 +63,7 @@
   	if (copy != NULL){
   		copy+=1;
   		*output = open(copy,O_TRUNC|O_WRONLY|O_CREAT, 0666);
-  		printf("opened out.txt:%s, fid is %d\n",copy,*output);
+  		// printf("opened out.txt:%s, fid is %d\n",copy,*output);
   	}
 
   	// printf("temp is:%s!\n",temp);
@@ -69,7 +75,7 @@
   			temp[len-1] = '\0';
   		}
   		*input = open(temp,O_RDONLY);
-  		printf("opened in.txt:%s, fid is %d\n",temp,*input);
+  		// printf("opened in.txt:%s, fid is %d\n",temp,*input);
   	}
   	// printf("copy is:%s!\n",copy);
 
@@ -124,6 +130,7 @@
 	    execute(args);
 	    dup2(new,STDOUT_FILENO);
 	    free(args);
+	    return;
 
 	} else {
 	    // dup2(fds[0], STDIN_FILENO);
@@ -143,9 +150,14 @@
 
 	    int new = dup(STDIN_FILENO);
 	    dup2(input,STDIN_FILENO);
-
+	 //    printf("STDOUT IS:%d\n",STDOUT_FILENO);
+		// printf("STDIN IS:%d\n",input);
 	    execute(args);
+	 //    printf("STDOUT IS:%d\n",STDOUT_FILENO);
+		// printf("STDIN IS:%d\n",STDIN_FILENO);
 	    dup2(new,STDIN_FILENO);
+	 //    printf("STDOUT IS:%d\n",STDOUT_FILENO);
+		// printf("STDIN IS:%d\n",new);
 	    args[0] = "rm";
 	    args[1] = "temp.txt";
 	    args[2] = 0;
@@ -198,6 +210,7 @@
 	int print_again = 1;
 	// Execution Loop
 	while (1){
+	  // signal(SIGINT,sighandler);
 	  if (print_again){
 	  	printf("%s: ","~BASH$");
 	  	print_again = 0;
@@ -220,6 +233,9 @@
 	  if (count){
 	  	execute_pipe(cmd);
 	  	print_again = 1;
+	  	input = 0;
+		output = 0;
+
 	  	continue;
 	  }
 	  parse_redirects(cmd,&input,&output);
@@ -254,7 +270,7 @@
 	  for (int i = 0; i < numtok; i++){
 	  	parse_args(ararg[i],args);
 		if (!execute(args)){
-			printf("Hasta la vista BABY\n");
+			printf("Hasta la vista!\n");
 			return 0;
 		}
 		//return output to stdout
