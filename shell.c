@@ -74,25 +74,10 @@
   	// printf("copy is:%s!\n",copy);
 
   	strcpy(line,cmd);
-  	// printf("line is: %s\n", line);
-  	// printf("copy is: %s\n",copy);
-	// temp += 1;
-	// printf("temp is: %s\n",temp);
+
 	free(liberty);
   }
-  // void parse_redirects(char *line, int *input, int *output){
-  // 	char copy[100];
-  // 	char *temp;
 
-  // 	strcpy(copy,line);
-  // 	temp = strsep(copy,">");
-  // 	*output = open(copy,O_TRUNC|O_WRONLY|O_CREAT, 0666);
-
-  // 	cmd = strsep(temp,"<");
-  // 	*input = open(temp,O_RDONLY);
-
-  // 	strcpy(line,cmd);
-  // }
   int print_string(char *s){
   	int count = 0;
   	while (*s){
@@ -112,7 +97,63 @@
   		temp = sarray[i];
   	}
   }
+  void execute_pipe(char *cmd){
+  	char *front = strsep(&cmd,"|");
+  	char ** ararg0 = calloc(20,sizeof(char*));
+  	char ** ararg1 = calloc(20,sizeof(char*));
 
+	// printf("cmd is: %s\n",cmd);
+	// strcat(cmd,"\0");
+	int numtok = 1;
+	parse_arargs(front,ararg0);
+	parse_arargs(cmd,ararg1);
+	
+  	int fds[2];
+	char line[100];
+	int f;
+
+	pipe(fds);
+	f = fork();
+	if (!f){
+
+	    char **args = calloc(100,sizeof(char*));
+		parse_args(ararg0[0],args);
+		int new = dup(STDOUT_FILENO);
+	    dup2(fds[1], STDOUT_FILENO);
+
+	    execute(args);
+	    dup2(new,STDOUT_FILENO);
+	    free(args);
+
+	} else {
+	    // dup2(fds[0], STDIN_FILENO);
+	    char s[1024];
+	    char **args = calloc(100,sizeof(char*));
+		parse_args(ararg1[0],args);
+
+	    int size = read(fds[0], s, sizeof(s));
+	    s[size] = 0;
+	    // printf(s);
+	    int output = open("temp.txt",O_TRUNC|O_WRONLY|O_CREAT, 0666);
+
+	    write(output,s,strlen(s));
+	    close(output);
+
+	    int input = open("temp.txt",O_RDONLY);
+
+	    int new = dup(STDIN_FILENO);
+	    dup2(input,STDIN_FILENO);
+
+	    execute(args);
+	    dup2(new,STDIN_FILENO);
+	    args[0] = "rm";
+	    args[1] = "temp.txt";
+	    args[2] = 0;
+	    execute(args);
+	    free(args);
+	}
+
+  }
   int execute(char **args){
   	if (!strcmp(args[0],"exit")){
   		return 0;
@@ -124,34 +165,18 @@
 	int f;
 	f = fork();
 	if (!f){
-	  // printf("Process %d is running...\n",getpid());
-	  // println(args);
 	  execvp(args[0], args);
 	  return 1;
 	}
 	else{
 	  int status;
 	  wait(&status);
-	  // printf("Parent waited for child...exit status was %d \n",WEXITSTATUS(status));
 	  return 1;
 	}
   }
-  // int main(){
-  // 	char line[] = "Test this stupid program";
-  // 	char **args = parse_args(line);
-  // 	println(args);
-  // 	return 0;
-  // }
 
   int main(){
-  	// char *line;
-  	// strcpy(line,"cd ..");
-  	// char *path = calloc(100,sizeof(char));
-  	// line +=3;
-  	// print_string(line);
-  	// strcpy(path,line);
-  	// printf("%s\n",path);
-  	// return 0;
+ 
 	// Initalization 
 	char cwd[PATH_MAX];
 	getcwd(cwd, sizeof(cwd));
@@ -184,66 +209,67 @@
 	  // printf("cmd is:%s!\n",cmd);
 	  // printf("Command was:%s",cmd);
 	  char *temp = cmd;
+	  //Check if pipe exists
+	  int count = 0;
 	  while (*temp){
-	  	if (*temp == "|"){
-
+	  	if (*temp == '|'){
+	  		count +=1;
+	  	}
+	  	temp +=1;
+	  }
+	  if (count){
+	  	execute_pipe(cmd);
+	  	print_again = 1;
+	  	continue;
+	  }
+	  parse_redirects(cmd,&input,&output);
+	  // printf("cmd is: %s\n",cmd);
+	  // strcat(cmd,"\0");
+	  parse_arargs(cmd,ararg);
+	  for (int i = 0; i < 100; i++){
+	  	if (!ararg[i]){
+	  		numtok = i;
+	  		break;
 	  	}
 	  }
-	  int f;
-	  f = fork();
-	  if (!f){
-		  parse_redirects(cmd,&input,&output);
-		  // printf("cmd is: %s\n",cmd);
-		  // strcat(cmd,"\0");
-		  parse_arargs(cmd,ararg);
-		  for (int i = 0; i < 100; i++){
-		  	if (!ararg[i]){
-		  		numtok = i;
-		  		break;
-		  	}
-		  }
-		  if (output){
-			newout = dup(STDOUT_FILENO);
-			// printf("dup of stdout:%d\n",new);
-		    dup2(output,STDOUT_FILENO);
-		  }
-		  if (input){
-			newin = dup(STDIN_FILENO);
-			// printf("dup of stdout:%d\n",new);
-		    dup2(input,STDIN_FILENO);
-		  }
-		  // printf("argument was %s\n",args[0]);
-		  // printf("Args[0] was:");
-		  // printf("Length was %d\n",print_string(args[0]));
-		  
-		  // printf("Args[1] was %s\n",args[1]);
-		 
-		  // printf("Args[2] was %s\n",args[2]);
-		  // execvp(args[0],args);
+	  if (output){
+		newout = dup(STDOUT_FILENO);
+		// printf("dup of stdout:%d\n",new);
+	    dup2(output,STDOUT_FILENO);
+	  }
+	  if (input){
+		newin = dup(STDIN_FILENO);
+		// printf("dup of stdout:%d\n",new);
+	    dup2(input,STDIN_FILENO);
+	  }
+	  // printf("argument was %s\n",args[0]);
+	  // printf("Args[0] was:");
+	  // printf("Length was %d\n",print_string(args[0]));
+	  
+	  // printf("Args[1] was %s\n",args[1]);
+	 
+	  // printf("Args[2] was %s\n",args[2]);
+	  // execvp(args[0],args);
 
-		  for (int i = 0; i < numtok; i++){
-		  	parse_args(ararg[i],args);
-			if (!execute(args)){
-				printf("Hasta la vista BABY\n");
-				return 0;
-			}
-			//return output to stdout
-			if (output){
-				dup2(newout,STDOUT_FILENO);
-				input = 0;
-				output = 0;
-			}
-			if (input){
-				dup2(newin,STDIN_FILENO);
-				input = 0;
-				output = 0;
-			}
-		  }
-		  print_again = 1;
+	  for (int i = 0; i < numtok; i++){
+	  	parse_args(ararg[i],args);
+		if (!execute(args)){
+			printf("Hasta la vista BABY\n");
+			return 0;
 		}
-	}
-	else{
-		
+		//return output to stdout
+		if (output){
+			dup2(newout,STDOUT_FILENO);
+			input = 0;
+			output = 0;
+		}
+		if (input){
+			dup2(newin,STDIN_FILENO);
+			input = 0;
+			output = 0;
+		}
+	  }
+	  print_again = 1;
 	}
 	// Exit Program
 	return 0;
