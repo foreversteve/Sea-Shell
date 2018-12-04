@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 /*
 Exec family <unistd.h>:
@@ -39,7 +40,29 @@ int main(){
 	// execlp("ls","ls","-a",NULL);
 
 	// Example of execvp
-	execvp(args[0],args);
+	int fid = open("out.txt",O_TRUNC|O_WRONLY|O_CREAT, 0666);
+	printf("fid of out.txt:%d\n",fid);
+	int new = dup(STDOUT_FILENO);
+	printf("dup of stdout:%d\n",new);
+	dup2(fid,STDOUT_FILENO);
+	int f;
+	f = fork();
+	if (!f){
+	  // printf("Process %d is running...\n",getpid());
+	  // println(args);
+	  execvp(args[0],args);
+	  return 1;
+	}
+	else{
+	  int status;
+	  wait(&status);
+	  dup2(new,STDOUT_FILENO);
+	  printf("STDOUT is back to normal\n");
+	  close(fid);
+	  // printf("Parent waited for child...exit status was %d \n",WEXITSTATUS(status));
+	  return 1;
+	}
+
 	// execvp(cmd);
 
 	return 0;
